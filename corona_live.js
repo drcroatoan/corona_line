@@ -2,10 +2,9 @@
 // corona-live.com 화면처럼 구성한 위젯입니다.
 // 목적에 맞게 색상은 기본 칼라로만 변수 구성했습니다.
 // (그래프 및 증감 색상 변경 직접 변경 필요)
-// ver 1.2
-// - 확진자 수 증가로 인해 그래프 구분선을 5000대까지 확장
-// ver 1.1. 그래프 좌측 여백 적용
-// 10 이하 표시조건 추가
+// ver 1.3 - apiv3 변경, 총 확진자 수 & 총 증가 수 업데이트, UpOrDown kformat 변수 적용
+// ver 1.2 - 확진자 수 증가로 인해 그래프 구분선을 5000대까지 확장
+// ver 1.1 - 그래프 좌측 여백 적용, 10 이하 표시조건 추가
 // 미리보기와 화면이 다름 (디자인시 참조)
 
 const useBGimg = false; // 배경 이미지 사용 여부
@@ -40,10 +39,11 @@ const border = 0;
 
 const fmi = FileManager.iCloud();
 
-const data = await new Request(`https://apiv2.corona-live.com/domestic-init.json`).loadJSON();
+const stat_data = await new Request('https://apiv3.corona-live.com/domestic/stat.json').loadJSON();
+const data = await new Request('https://apiv2.corona-live.com/domestic-init.json').loadJSON();
 
-const ttlval = kFormatter(data.stats.cases[0]);
-const ttlgap = data.stats.cases[1];
+const ttlval = kFormatter(stat_data.overview.confirmed[0]);
+const ttlgap = stat_data.overview.confirmed[1];
 
 const today_timeval = data.timeseries.today;
 const yesterday_timeval = data.timeseries.yesterday;
@@ -109,7 +109,7 @@ value.minimumScaleFactor = 0.9;//0.9
 
 inbox.addSpacer(3);
 
-UporDown(ttlgap, inbox, num_font, gap_fontsize);
+UporDown(ttlgap, inbox, num_font, gap_fontsize, false);
 
 outbox.addSpacer(); // 중간 공백처리
 
@@ -133,7 +133,7 @@ value.minimumScaleFactor = 0.9; //0.9
 
 inbox.addSpacer(3);
 
-UporDown(nowgap, inbox, num_font, gap_fontsize);
+UporDown(nowgap, inbox, num_font, gap_fontsize, true);
 
 g.addSpacer(6);
 
@@ -246,7 +246,7 @@ function drawCoronaGraph() {
 }
 
 // 증감 표시 박스
-function UporDown(value, stack, font, fontsize) {
+function UporDown(value, stack, font, fontsize, kformat) {
   let textcolor, bgcolor, sf;
   if(value == 0) { 
     return null;
@@ -268,7 +268,7 @@ function UporDown(value, stack, font, fontsize) {
   roundbox.setPadding(1, 2.5, 1, 2.5);
   
 
-  let content = roundbox.addText(Math.abs(value).toLocaleString());
+  let content = roundbox.addText(kformat ? kFormatter(Math.abs(value)).toLocaleString() : Math.abs(value).toLocaleString());
   content.font = new Font(font, fontsize);
   content.textColor = new Color(textcolor);
   
@@ -281,5 +281,5 @@ function UporDown(value, stack, font, fontsize) {
 
 // k함수
 function kFormatter(num) {
-    return Math.abs(num) > 999 ? Math.sign(num)*((Math.abs(num)/1000).toFixed(0)) + 'K' : Math.sign(num)*Math.abs(num)
+    return Math.abs(num) > 999999 ? Math.sign(num)*((Math.abs(num)/1000000).toFixed(0)) + 'M' : Math.abs(num) > 999 ? Math.sign(num)*((Math.abs(num)/1000).toFixed(0)) + 'K' : Math.sign(num)*Math.abs(num)
 }
